@@ -8,44 +8,61 @@ interface BoardState {
   repoUrl: string;
 }
 
+const loadStateFromLocalStorage = (): Issue[] => {
+  try {
+    const savedState = localStorage.getItem('kanban_issues');
+    return savedState ? (JSON.parse(savedState) as Issue[]) : [];
+  } catch (error) {
+    console.error('Error loading state from localStorage:', error);
+    return [];
+  }
+};
+
 const initialState: BoardState = {
-  issues: [],
+  issues: loadStateFromLocalStorage(),
   loading: false,
   error: null,
   repoUrl: '',
 };
 
-export const fetchIssues = createAsyncThunk(
+export const fetchIssues = createAsyncThunk<Issue[], string, { rejectValue: string }>(
   'board/fetchIssues',
-  async (repoUrl: string, { rejectWithValue }) => {
+  async (repoUrl, { rejectWithValue }) => {
     try {
       const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
       if (!match) throw new Error('Invalid repository URL');
 
       const [, owner, repo] = match;
-      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues?state=all`);
+      const url = `https://api.github.com/repos/${owner}/${repo}/issues?state=all&per_page=100`;
 
+      console.log(`Fetching issues from: ${url}`);
+      const response = await fetch(url);
+      if (response.status === 403) throw new Error('GitHub API rate limit exceeded. Try again later.');
       if (!response.ok) throw new Error('Failed to fetch issues');
-      const data = await response.json();
+
+      const data: any[] = await response.json();
       console.log('Fetched issues:', data);
 
-      return data.map((issue: any) => ({
+      return data.map((issue) => ({
         id: issue.id,
         title: issue.title,
         number: issue.number,
         createdAt: issue.created_at,
-        author: issue.user.login,
+        author: issue.user?.login || "Unknown",
         comments: issue.comments,
+        state: issue.state,
+        assignees: issue.assignees ?? [],
+        labels: issue.labels ?? [],
         status:
           issue.state === 'closed'
             ? 'Done'
-            : (issue.assignees && issue.assignees.length > 0) ||
-              (issue.labels && issue.labels.some((label: any) => /progress|wip/i.test(label.name)))
+            : (issue.assignees.length > 0) ||
+              (issue.labels.some((label: { name: string }) => /progress|wip/i.test(label.name)))
             ? 'InProgress'
             : 'ToDo',
       }));
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   }
 );
@@ -62,6 +79,7 @@ const boardSlice = createSlice({
       if (issue) {
         issue.status = action.payload.status;
       }
+      localStorage.setItem('kanban_issues', JSON.stringify(state.issues));
     }
   },
   extraReducers: (builder) => {
@@ -70,14 +88,14 @@ const boardSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchIssues.fulfilled, (state, action: PayloadAction<Issue[]>) => {
+      .addCase(fetchIssues.fulfilled, (state, action) => {
         state.loading = false;
         state.issues = action.payload;
-        console.log('Sorted issues:', action.payload);
+        localStorage.setItem('kanban_issues', JSON.stringify(state.issues));
       })
       .addCase(fetchIssues.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.payload || 'An unknown error occurred';
       });
   }
 });
