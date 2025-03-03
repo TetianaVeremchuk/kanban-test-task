@@ -1,50 +1,49 @@
-# React + TypeScript + Vite
+# Kanban Board
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[DEMO](https://kanban-test-task-8xqs95ukb-tetiana-veremchuks-projects.vercel.app/)
 
-Currently, two official plugins are available:
+Kanban Board is a web application for task management using a Kanban board.  
+It allows users to view, sort, and move tasks between columns.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Project Description
+The application integrates with the GitHub API, retrieving issues from a repository entered by the user.  
+Tasks are categorized into three groups: **ToDo (new issues), In Progress (open issues with an assignee), and Done (closed issues)**.  
+Users can change the status of tasks by dragging them between columns and reorder tasks within a column.  
+Task positions are saved between browser sessions.
 
-## Expanding the ESLint configuration
+## Key Features
+- Enter a GitHub repository and load issues
+- View tasks in **ToDo, In Progress, and Done** categories
+- Drag & drop tasks between columns and within a column
+- Save task positions between browser sessions
+- Automatically update the task list when a new repository is loaded
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Technologies Used
 
-- Configure the top-level `parserOptions` property like this:
+### Core Stack
+- **React 18 + Vite** — Used for fast and efficient frontend development. Vite ensures instant compilation and quick startup.
+- **TypeScript** — Adds static typing, preventing runtime errors and improving code auto-completion.
+- **Redux Toolkit** — Manages application state, stores task lists, and synchronizes data between components.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-});
-```
+### Functional Libraries
+- **Dnd-kit** — A modern drag & drop library. 
+- **React Testing Library + Vitest** — Used for component testing to verify correct rendering and user interactions.
+- **React Bootstrap** — Provides pre-built UI components for quick and visually appealing styling.
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+### Deployment
+- **Vercel** — Used for automatic deployment, ensuring instant updates to the application after each GitHub push.
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react';
+## How to Run the Project Locally
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-});
-```
+```sh
+# 1. Clone the repository
+git clone https://github.com/TetianaVeremchuk/kanban-test-task.git
+
+# 2. Navigate to the project directory
+cd kanban-test-task
+
+# 3. Install dependencies
+npm install
+
+# 4. Start the development server
+npm run dev
