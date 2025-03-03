@@ -1,6 +1,6 @@
 # Kanban Board
 
-[DEMO](https://kanban-test-task-8xqs95ukb-tetiana-veremchuks-projects.vercel.app/)
+[DEMO](https://kanban-test-task-git-main-tetiana-veremchuks-projects.vercel.app/)
 
 Kanban Board is a web application for task management using a Kanban board.  
 It allows users to view, sort, and move tasks between columns.

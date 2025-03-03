@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface RepoState {
+export interface RepoState {
   owner: string;
   repo: string;
 }

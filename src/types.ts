@@ -5,6 +5,18 @@ export interface Issue {
   createdAt: string;
   author: string;
   comments: number;
+  state: string;
+  assignees: any[];
+  labels: any[];
   status: "ToDo" | "InProgress" | "Done";
-  state: "open" | "closed";
+}
+
+export interface ColumnProps {
+  id: "ToDo" | "InProgress" | "Done";
+  title: string;
+  issues: Issue[];
+}
+
+export interface IssueCardProps {
+  issue: Issue;
 }

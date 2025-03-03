@@ -1,36 +1,19 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Issue } from '../types';
+import { loadStateFromLocalStorage, getStatus } from '../utils';
 
-interface BoardState {
+export interface BoardState {
   issues: Issue[];
   loading: boolean;
   error: string | null;
   repoUrl: string;
 }
 
-const loadStateFromLocalStorage = (repoUrl: string): Issue[] => {
-  try {
-    const savedState = localStorage.getItem(`kanban_issues_${repoUrl}`);
-    return savedState ? (JSON.parse(savedState) as Issue[]) : [];
-  } catch (error) {
-    console.error('Error loading state from localStorage:', error);
-    return [];
-  }
-};
-
 const initialState: BoardState = {
   issues: [],
   loading: false,
   error: null,
   repoUrl: '',
-};
-
-const getStatus = (issue: any): "ToDo" | "InProgress" | "Done" => {
-  if (issue.state === 'closed') return 'Done';
-  if (issue.assignees?.length > 0 || issue.labels?.some((label: { name: string }) => /progress|wip/i.test(label.name))) {
-    return 'InProgress';
-  }
-  return 'ToDo';
 };
 
 export const fetchIssues = createAsyncThunk<Issue[], string, { rejectValue: string }>(
@@ -47,8 +30,7 @@ export const fetchIssues = createAsyncThunk<Issue[], string, { rejectValue: stri
       if (!response.ok) throw new Error('Failed to fetch issues');
 
       const data: any[] = await response.json();
-
-      const issues: Issue[] = data.map((issue) => ({
+      const issues: Issue[] = data.map(issue => ({
         id: issue.id,
         title: issue.title,
         number: issue.number,
@@ -61,8 +43,7 @@ export const fetchIssues = createAsyncThunk<Issue[], string, { rejectValue: stri
         status: getStatus(issue),
       }));
 
-      const savedIssues = loadStateFromLocalStorage(repoUrl);
-      return savedIssues.length > 0 ? savedIssues : issues;
+      return loadStateFromLocalStorage(repoUrl).length > 0 ? loadStateFromLocalStorage(repoUrl) : issues;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
@@ -77,15 +58,13 @@ const boardSlice = createSlice({
       state.repoUrl = action.payload;
       state.issues = loadStateFromLocalStorage(action.payload);
     },
-    
     updateIssueStatus: (state, action: PayloadAction<{ id: number; status: "ToDo" | "InProgress" | "Done" }>) => {
-      const issueIndex = state.issues.findIndex((issue) => issue.id === action.payload.id);
-      if (issueIndex !== -1) {
-        state.issues[issueIndex] = { ...state.issues[issueIndex], status: action.payload.status };
+      const issue = state.issues.find(issue => issue.id === action.payload.id);
+      if (issue) {
+        issue.status = action.payload.status;
         localStorage.setItem(`kanban_issues_${state.repoUrl}`, JSON.stringify(state.issues));
       }
     },
-    
     updateIssuesOrder: (state, action: PayloadAction<Issue[]>) => {
       state.issues = action.payload;
       localStorage.setItem(`kanban_issues_${state.repoUrl}`, JSON.stringify(state.issues));
@@ -108,7 +87,6 @@ const boardSlice = createSlice({
       });
   }
 });
-
 
 export const { setRepoUrl, updateIssueStatus, updateIssuesOrder } = boardSlice.actions;
 export default boardSlice.reducer;
