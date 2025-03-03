@@ -6,7 +6,5 @@ export interface Issue {
   author: string;
   comments: number;
   status: "ToDo" | "InProgress" | "Done";
-  assignees?: { login: string }[]; 
-  labels?: { name: string }[]; 
   state: "open" | "closed";
 }

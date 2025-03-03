@@ -8,9 +8,9 @@ interface BoardState {
   repoUrl: string;
 }
 
-const loadStateFromLocalStorage = (): Issue[] => {
+const loadStateFromLocalStorage = (repoUrl: string): Issue[] => {
   try {
-    const savedState = localStorage.getItem('kanban_issues');
+    const savedState = localStorage.getItem(`kanban_issues_${repoUrl}`);
     return savedState ? (JSON.parse(savedState) as Issue[]) : [];
   } catch (error) {
     console.error('Error loading state from localStorage:', error);
@@ -19,10 +19,18 @@ const loadStateFromLocalStorage = (): Issue[] => {
 };
 
 const initialState: BoardState = {
-  issues: loadStateFromLocalStorage(),
+  issues: [],
   loading: false,
   error: null,
   repoUrl: '',
+};
+
+const getStatus = (issue: any): "ToDo" | "InProgress" | "Done" => {
+  if (issue.state === 'closed') return 'Done';
+  if (issue.assignees?.length > 0 || issue.labels?.some((label: { name: string }) => /progress|wip/i.test(label.name))) {
+    return 'InProgress';
+  }
+  return 'ToDo';
 };
 
 export const fetchIssues = createAsyncThunk<Issue[], string, { rejectValue: string }>(
@@ -35,15 +43,12 @@ export const fetchIssues = createAsyncThunk<Issue[], string, { rejectValue: stri
       const [, owner, repo] = match;
       const url = `https://api.github.com/repos/${owner}/${repo}/issues?state=all&per_page=100`;
 
-      console.log(`Fetching issues from: ${url}`);
       const response = await fetch(url);
-      if (response.status === 403) throw new Error('GitHub API rate limit exceeded. Try again later.');
       if (!response.ok) throw new Error('Failed to fetch issues');
 
       const data: any[] = await response.json();
-      console.log('Fetched issues:', data);
 
-      return data.map((issue) => ({
+      const issues: Issue[] = data.map((issue) => ({
         id: issue.id,
         title: issue.title,
         number: issue.number,
@@ -53,14 +58,11 @@ export const fetchIssues = createAsyncThunk<Issue[], string, { rejectValue: stri
         state: issue.state,
         assignees: issue.assignees ?? [],
         labels: issue.labels ?? [],
-        status:
-          issue.state === 'closed'
-            ? 'Done'
-            : (issue.assignees.length > 0) ||
-              (issue.labels.some((label: { name: string }) => /progress|wip/i.test(label.name)))
-            ? 'InProgress'
-            : 'ToDo',
+        status: getStatus(issue),
       }));
+
+      const savedIssues = loadStateFromLocalStorage(repoUrl);
+      return savedIssues.length > 0 ? savedIssues : issues;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
@@ -73,13 +75,20 @@ const boardSlice = createSlice({
   reducers: {
     setRepoUrl: (state, action: PayloadAction<string>) => {
       state.repoUrl = action.payload;
+      state.issues = loadStateFromLocalStorage(action.payload);
     },
+    
     updateIssueStatus: (state, action: PayloadAction<{ id: number; status: "ToDo" | "InProgress" | "Done" }>) => {
-      const issue = state.issues.find((issue) => issue.id === action.payload.id);
-      if (issue) {
-        issue.status = action.payload.status;
+      const issueIndex = state.issues.findIndex((issue) => issue.id === action.payload.id);
+      if (issueIndex !== -1) {
+        state.issues[issueIndex] = { ...state.issues[issueIndex], status: action.payload.status };
+        localStorage.setItem(`kanban_issues_${state.repoUrl}`, JSON.stringify(state.issues));
       }
-      localStorage.setItem('kanban_issues', JSON.stringify(state.issues));
+    },
+    
+    updateIssuesOrder: (state, action: PayloadAction<Issue[]>) => {
+      state.issues = action.payload;
+      localStorage.setItem(`kanban_issues_${state.repoUrl}`, JSON.stringify(state.issues));
     }
   },
   extraReducers: (builder) => {
@@ -91,7 +100,7 @@ const boardSlice = createSlice({
       .addCase(fetchIssues.fulfilled, (state, action) => {
         state.loading = false;
         state.issues = action.payload;
-        localStorage.setItem('kanban_issues', JSON.stringify(state.issues));
+        localStorage.setItem(`kanban_issues_${state.repoUrl}`, JSON.stringify(state.issues));
       })
       .addCase(fetchIssues.rejected, (state, action) => {
         state.loading = false;
@@ -100,5 +109,6 @@ const boardSlice = createSlice({
   }
 });
 
-export const { setRepoUrl, updateIssueStatus } = boardSlice.actions;
+
+export const { setRepoUrl, updateIssueStatus, updateIssuesOrder } = boardSlice.actions;
 export default boardSlice.reducer;
