@@ -14,12 +14,10 @@
     "paths": {
       "@components/*": ["components/*"],
       "@store/*": ["store/*"]
-    },
-    "types": ["jest", "node"]
+    }
   },
-  "include": ["src", "src/**/*.ts", "src/**/*.tsx", "__tests__", "setupTests.ts"],
+  "include": ["src", "src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "dist", "build"],
-  "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }

@@ -27,7 +27,6 @@ Task positions are saved between browser sessions.
 
 ### Functional Libraries
 - **Dnd-kit** — A modern drag & drop library. 
-- **React Testing Library + Vitest** — Used for component testing to verify correct rendering and user interactions.
 - **React Bootstrap** — Provides pre-built UI components for quick and visually appealing styling.
 
 ### Deployment
